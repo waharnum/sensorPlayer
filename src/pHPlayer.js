@@ -156,15 +156,21 @@
                 options: {
                     model: {
                         value: "{pHSensor}.model.sensorValue"
+                    },
+                    members: {
+                        template: "<p><strong>pH Sensor Value:</strong> <span class=\"flc-valueDisplay-value\"></span></p>"
                     }
                 }
             },
             synthFreqDisplay: {
                 type: "fluid.sensorPlayer.valueDisplay",
-                container: ".flc-freqValue",
+                container: ".flc-pHFreqValue",
                 options: {
                     model: {
                         value: "{pHSynthesizer}.model.inputs.carrier.freq"
+                    },
+                    members: {
+                        template: "<p><strong>Synthesizer frequency:</strong> <span class=\"flc-valueDisplay-value\"></span></p>"
                     }
                 }
             }
