@@ -47,6 +47,16 @@
         }
     });
 
+    fluid.defaults("fluid.sensorPlayer.simulatedSensor.temperatureSensor", {
+        gradeNames: ["fluid.sensorPlayer.simulatedSensor"],
+        model: {
+            sensorValue: 15,
+            sensorMax: 35,
+            sensorMin: -35,
+            description: "A simulated temperature sensor (in celcius); constrained from -35 to 35."
+        }
+    });
+
     fluid.sensorPlayer.simulatedSensor.simulateChanges = function(that, simulateChanges) {
 
         if(simulateChanges) {
@@ -271,6 +281,15 @@
         components: {
             sensor: {
                 type: "fluid.sensorPlayer.simulatedSensor.pHSensor"
+            }
+        }
+    });
+
+    fluid.defaults("fluid.sensorPlayer.temperatureSensorPlayer", {
+        gradeNames: ["fluid.sensorPlayer"],
+        components: {
+            sensor: {
+                type: "fluid.sensorPlayer.simulatedSensor.temperatureSensor"
             }
         }
     });
