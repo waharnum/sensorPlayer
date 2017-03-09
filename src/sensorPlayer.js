@@ -12,7 +12,8 @@
             simulateChanges: true,
             simulateChangesInterval: 1000,
             sensorMax: 100,
-            sensorMin: 0
+            sensorMin: 0,
+            description: "A simulated sensor"
         },
         members: {
             simulateChangesIntervalId: null
@@ -41,7 +42,8 @@
         model: {
             sensorValue: 7,
             sensorMax: 14,
-            sensorMin: 1
+            sensorMin: 1,
+            description: "A simulated pH sensor."
         }
     });
 
@@ -160,10 +162,11 @@
             sensorMaxDisplay: ".flc-sensorMaxValue",
             sensorMinDisplay: ".flc-sensorMinValue",
             sensorValueDisplay: ".flc-sensorValue",
-            synthFreqDisplay: ".flc-freqValue"
+            synthFreqDisplay: ".flc-freqValue",
+            descriptionDisplay: ".flc-descriptionDisplay"
         },
         members: {
-            template: '<div class="flc-sensorMaxValue"></div><div class="flc-sensorMinValue"></div><div class="flc-sensorValue"></div><div class="flc-freqValue"></div>'
+            template: '<div class="flc-descriptionDisplay"></div><div class="flc-sensorMaxValue"></div><div class="flc-sensorMinValue"></div><div class="flc-sensorValue"></div><div class="flc-freqValue"></div>'
         },
         listeners: {
             "onCreate.appendDisplayTemplate": {
@@ -193,6 +196,19 @@
                         sensorMin: "{sensor}.model.sensorMin"
                     },
                     addToEnvironment: true
+                }
+            },
+            descriptionDisplay: {
+                createOnEvent: "{sensorPlayer}.events.displayTemplateReady",
+                type: "fluid.sensorPlayer.valueDisplay",
+                container: "{sensorPlayer}.dom.descriptionDisplay",
+                options: {
+                    model: {
+                        value: "{sensor}.model.description"
+                    },
+                    members: {
+                        template: "<strong>Sensor Description:</strong> <span class=\"flc-valueDisplay-value\"></span>"
+                    }
                 }
             },
             sensorMinDisplay: {
