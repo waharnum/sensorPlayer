@@ -1,0 +1,7 @@
+
+{
+    "name" : "phPlayer",
+    "dependencies" : {
+        "flocking" : "colinbdclark/flocking"
+    }
+}
