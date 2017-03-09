@@ -11,8 +11,8 @@
             sensorValue: 50,
             simulateChanges: true,
             simulateChangesInterval: 1000,
-            sensorUpper: 100,
-            sensorLower: 0
+            sensorMax: 100,
+            sensorMin: 0
         },
         members: {
             simulateChangesIntervalId: null
@@ -40,8 +40,8 @@
         gradeNames: ["fluid.sensorPlayer.simulatedSensor"],
         model: {
             sensorValue: 7,
-            sensorUpper: 14,
-            sensorLower: 1
+            sensorMax: 14,
+            sensorMin: 1
         }
     });
 
@@ -50,7 +50,7 @@
         if(simulateChanges) {
             // Turn on the interval changes to the sensorValue
             that.simulateChangesIntervalId = setInterval(function() {
-                that.applier.change("sensorValue", fluid.sensorPlayer.simulatedSensor.randomInt(that.model.sensorUpper, that.model.sensorLower));
+                that.applier.change("sensorValue", fluid.sensorPlayer.simulatedSensor.randomInt(that.model.sensorMax, that.model.sensorMin));
             }, that.model.simulateChangesInterval);
         } else {
             // Turn off the interval changes to the sensorValue
@@ -60,13 +60,14 @@
 
     // A sensor synthesizer that translates a lower and upper bounded
     // sensor into lower or higher frequencies
+    // Also plays a continuous "midpoint" tone
     fluid.defaults("fluid.sensorPlayer.sensorScalingSynthesizer", {
         gradeNames: ["flock.modelSynth"],
         model: {
-            freqUpper: 650,
-            freqLower: 250,
-            sensorUpper: 100,
-            sensorLower: 0,
+            freqMax: 650,
+            freqMin: 250,
+            sensorMax: 100,
+            sensorMin: 0,
             sensorValue: 50
         },
         synthDef: [
@@ -96,13 +97,13 @@
     });
 
     fluid.sensorPlayer.sensorScalingSynthesizer.relaySensorValue = function(that, sensorValue) {
-        var freqUpper = that.model.freqUpper,
-            freqLower = that.model.freqLower,
-            sensorUpper = that.model.sensorUpper,
-            sensorLower = that.model.sensorLower;
+        var freqMax = that.model.freqMax,
+            freqMin = that.model.freqMin,
+            sensorMax = that.model.sensorMax,
+            sensorMin = that.model.sensorMin;
 
-        var freq = fluid.sensorPlayer.sensorScalingSynthesizer.scaleValue(sensorValue, sensorLower, sensorUpper, freqLower, freqUpper);
-        var midpointFreq = fluid.sensorPlayer.sensorScalingSynthesizer.getMidpointValue(freqUpper, freqLower);
+        var freq = fluid.sensorPlayer.sensorScalingSynthesizer.scaleValue(sensorValue, sensorMin, sensorMax, freqMin, freqMax);
+        var midpointFreq = fluid.sensorPlayer.sensorScalingSynthesizer.getMidpointValue(freqMax, freqMin);
 
         that.applier.change("inputs.carrier.freq", freq);
         that.applier.change("inputs.midpoint.freq", midpointFreq);
@@ -156,11 +157,13 @@
             displayTemplateReady: null
         },
         selectors: {
+            sensorMaxDisplay: ".flc-sensorMaxValue",
+            sensorMinDisplay: ".flc-sensorMinValue",
             sensorValueDisplay: ".flc-sensorValue",
             synthFreqDisplay: ".flc-freqValue"
         },
         members: {
-            template: '<div class="flc-sensorValue"></div><div class="flc-freqValue"></div>'
+            template: '<div class="flc-sensorMaxValue"></div><div class="flc-sensorMinValue"></div><div class="flc-sensorValue"></div><div class="flc-freqValue"></div>'
         },
         listeners: {
             "onCreate.appendDisplayTemplate": {
@@ -186,10 +189,36 @@
                 options: {
                     model: {
                         sensorValue: "{sensor}.model.sensorValue",
-                        sensorUpper: "{sensor}.model.sensorUpper",
-                        sensorLower: "{sensor}.model.sensorLower"
+                        sensorMax: "{sensor}.model.sensorMax",
+                        sensorMin: "{sensor}.model.sensorMin"
                     },
                     addToEnvironment: true
+                }
+            },
+            sensorMinDisplay: {
+                createOnEvent: "{sensorPlayer}.events.displayTemplateReady",
+                type: "fluid.sensorPlayer.valueDisplay",
+                container: "{sensorPlayer}.dom.sensorMinDisplay",
+                options: {
+                    model: {
+                        value: "{sensor}.model.sensorMin"
+                    },
+                    members: {
+                        template: "<strong>Sensor Min Value:</strong> <span class=\"flc-valueDisplay-value\"></span>"
+                    }
+                }
+            },
+            sensorMaxDisplay: {
+                createOnEvent: "{sensorPlayer}.events.displayTemplateReady",
+                type: "fluid.sensorPlayer.valueDisplay",
+                container: "{sensorPlayer}.dom.sensorMaxDisplay",
+                options: {
+                    model: {
+                        value: "{sensor}.model.sensorMax"
+                    },
+                    members: {
+                        template: "<strong>Sensor Max Value:</strong> <span class=\"flc-valueDisplay-value\"></span>"
+                    }
                 }
             },
             sensorDisplay: {
@@ -201,7 +230,7 @@
                         value: "{sensor}.model.sensorValue"
                     },
                     members: {
-                        template: "<p><strong>Sensor Value:</strong> <span class=\"flc-valueDisplay-value\"></span></p>"
+                        template: "<strong>Sensor Current Value:</strong> <span class=\"flc-valueDisplay-value\"></span>"
                     }
                 }
             },
@@ -214,7 +243,7 @@
                         value: "{sensorSynthesizer}.model.inputs.carrier.freq"
                     },
                     members: {
-                        template: "<p><strong>Synthesizer frequency:</strong> <span class=\"flc-valueDisplay-value\"></span></p>"
+                        template: "<strong>Synthesizer frequency:</strong> <span class=\"flc-valueDisplay-value\"></span>"
                     }
                 }
             }
