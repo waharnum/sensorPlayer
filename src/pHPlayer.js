@@ -67,7 +67,7 @@
             ugen: "flock.ugen.sin",
             freq: 300
         },
-        // addToEnvironment: false,
+        addToEnvironment: true,
         modelListeners: {
             sensorValue: {
                 funcName: "fluid.sensorPlayer.sensorSynthesizer.relaySensorValue",
@@ -128,7 +128,7 @@
     fluid.defaults("fluid.sensorPlayer", {
         gradeNames: ["fluid.component"],
         components: {
-            pHSensor: {
+            sensor: {
                 type: "fluid.sensorPlayer.simulatedSensor",
                 options: {
                     model: {
@@ -140,22 +140,23 @@
                 }
 
             },
-            pHSynthesizer: {
+            sensorSynthesizer: {
                 type: "fluid.sensorPlayer.sensorSynthesizer",
                 options: {
                     model: {
-                        sensorValue: "{pHSensor}.model.sensorValue",
-                        sensorUpper: "{pHSensor}.model.sensorUpper",
-                        sensorLower: "{pHSensor}.model.sensorLower"
-                    }
+                        sensorValue: "{sensor}.model.sensorValue",
+                        sensorUpper: "{sensor}.model.sensorUpper",
+                        sensorLower: "{sensor}.model.sensorLower"
+                    },
+                    addToEnvironment: false
                 }
             },
-            pHSensorDisplay: {
+            sensorDisplay: {
                 type: "fluid.sensorPlayer.valueDisplay",
                 container: ".flc-pHSensorValue",
                 options: {
                     model: {
-                        value: "{pHSensor}.model.sensorValue"
+                        value: "{sensor}.model.sensorValue"
                     },
                     members: {
                         template: "<p><strong>pH Sensor Value:</strong> <span class=\"flc-valueDisplay-value\"></span></p>"
@@ -167,7 +168,7 @@
                 container: ".flc-pHFreqValue",
                 options: {
                     model: {
-                        value: "{pHSynthesizer}.model.inputs.carrier.freq"
+                        value: "{sensorSynthesizer}.model.inputs.carrier.freq"
                     },
                     members: {
                         template: "<p><strong>Synthesizer frequency:</strong> <span class=\"flc-valueDisplay-value\"></span></p>"
