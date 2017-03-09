@@ -36,6 +36,15 @@
         return Math.floor(Math.random() * (max - min)) + min;
     };
 
+    fluid.defaults("fluid.sensorPlayer.simulatedSensor.pHSensor", {
+        gradeNames: ["fluid.sensorPlayer.simulatedSensor"],
+        model: {
+            sensorValue: 7,
+            sensorUpper: 14,
+            sensorLower: 1
+        }
+    });
+
     fluid.sensorPlayer.simulatedSensor.simulateChanges = function(that, simulateChanges) {
 
         if(simulateChanges) {
@@ -49,46 +58,61 @@
         }
     };
 
-    fluid.defaults("fluid.sensorPlayer.sensorSynthesizer", {
+    // A sensor synthesizer that translates a lower and upper bounded
+    // sensor into lower or higher frequencies
+    fluid.defaults("fluid.sensorPlayer.sensorScalingSynthesizer", {
         gradeNames: ["flock.modelSynth"],
         model: {
-            inputs: {
-                carrier: {
-                    freq: null
-                }
-            },
-            freqUpper: 450,
-            freqLower: 300,
+            freqUpper: 650,
+            freqLower: 250,
             sensorUpper: 100,
             sensorLower: 0,
             sensorValue: 50
         },
-        synthDef: {
+        synthDef: [
+            {
             id: "carrier",
             ugen: "flock.ugen.sin",
-            freq: 300
-        },
+            inputs: {
+                freq: 440
+                }
+            },
+            {
+            id: "midpoint",
+            ugen: "flock.ugen.sin",
+            inputs: {
+                freq: 440,
+                mul: 0.25
+                }
+            }
+        ],
         addToEnvironment: true,
         modelListeners: {
             sensorValue: {
-                funcName: "fluid.sensorPlayer.sensorSynthesizer.relaySensorValue",
+                funcName: "fluid.sensorPlayer.sensorScalingSynthesizer.relaySensorValue",
                 args: ["{that}", "{that}.model.sensorValue"]
             }
         }
     });
 
-    fluid.sensorPlayer.sensorSynthesizer.relaySensorValue = function(that, sensorValue) {
+    fluid.sensorPlayer.sensorScalingSynthesizer.relaySensorValue = function(that, sensorValue) {
         var freqUpper = that.model.freqUpper,
             freqLower = that.model.freqLower,
             sensorUpper = that.model.sensorUpper,
             sensorLower = that.model.sensorLower;
 
-        var freq = fluid.sensorPlayer.sensorSynthesizer.scaleValue(sensorValue, sensorLower, sensorUpper, freqLower, freqUpper);
+        var freq = fluid.sensorPlayer.sensorScalingSynthesizer.scaleValue(sensorValue, sensorLower, sensorUpper, freqLower, freqUpper);
+        var midpointFreq = fluid.sensorPlayer.sensorScalingSynthesizer.getMidpointValue(freqUpper, freqLower);
 
         that.applier.change("inputs.carrier.freq", freq);
+        that.applier.change("inputs.midpoint.freq", midpointFreq);
     };
 
-    fluid.sensorPlayer.sensorSynthesizer.scaleValue = function (value, inputLower, inputUpper, outputLower, outputUpper) {
+    fluid.sensorPlayer.sensorScalingSynthesizer.getMidpointValue = function(upper, lower) {
+        return (upper + lower) / 2;
+    };
+
+    fluid.sensorPlayer.sensorScalingSynthesizer.scaleValue = function (value, inputLower, inputUpper, outputLower, outputUpper) {
         var scaledValue = ((outputUpper - outputLower) * (value - inputLower) / (inputUpper - inputLower)) + outputLower;
         return scaledValue;
 
@@ -127,46 +151,64 @@
     });
 
     fluid.defaults("fluid.sensorPlayer", {
-        gradeNames: ["fluid.component"],
+        gradeNames: ["fluid.viewComponent"],
+        events: {
+            displayTemplateReady: null
+        },
+        selectors: {
+            sensorValueDisplay: ".flc-sensorValue",
+            synthFreqDisplay: ".flc-freqValue"
+        },
+        members: {
+            template: '<div class="flc-sensorValue"></div><div class="flc-freqValue"></div>'
+        },
+        listeners: {
+            "onCreate.appendDisplayTemplate": {
+                "this": "{that}.container",
+                "method": "html",
+                "args": "{that}.template"
+            },
+            "onCreate.fireDisplayTemplateReady": {
+                func: "{that}.events.displayTemplateReady.fire"
+            }
+        },
         components: {
             sensor: {
                 type: "fluid.sensorPlayer.simulatedSensor",
                 options: {
                     model: {
-                        sensorValue: 7,
                         simulateChanges: true,
-                        sensorUpper: 14,
-                        sensorLower: 1
                     }
                 }
-
             },
             sensorSynthesizer: {
-                type: "fluid.sensorPlayer.sensorSynthesizer",
+                type: "fluid.sensorPlayer.sensorScalingSynthesizer",
                 options: {
                     model: {
                         sensorValue: "{sensor}.model.sensorValue",
                         sensorUpper: "{sensor}.model.sensorUpper",
                         sensorLower: "{sensor}.model.sensorLower"
                     },
-                    addToEnvironment: false
+                    addToEnvironment: true
                 }
             },
             sensorDisplay: {
+                createOnEvent: "{sensorPlayer}.events.displayTemplateReady",
                 type: "fluid.sensorPlayer.valueDisplay",
-                container: ".flc-pHSensorValue",
+                container: "{sensorPlayer}.dom.sensorValueDisplay",
                 options: {
                     model: {
                         value: "{sensor}.model.sensorValue"
                     },
                     members: {
-                        template: "<p><strong>pH Sensor Value:</strong> <span class=\"flc-valueDisplay-value\"></span></p>"
+                        template: "<p><strong>Sensor Value:</strong> <span class=\"flc-valueDisplay-value\"></span></p>"
                     }
                 }
             },
             synthFreqDisplay: {
+                createOnEvent: "{sensorPlayer}.events.displayTemplateReady",
                 type: "fluid.sensorPlayer.valueDisplay",
-                container: ".flc-pHFreqValue",
+                container: "{sensorPlayer}.dom.synthFreqDisplay",
                 options: {
                     model: {
                         value: "{sensorSynthesizer}.model.inputs.carrier.freq"
@@ -175,6 +217,15 @@
                         template: "<p><strong>Synthesizer frequency:</strong> <span class=\"flc-valueDisplay-value\"></span></p>"
                     }
                 }
+            }
+        }
+    });
+
+    fluid.defaults("fluid.sensorPlayer.pHSensorPlayer", {
+        gradeNames: ["fluid.sensorPlayer"],
+        components: {
+            sensor: {
+                type: "fluid.sensorPlayer.simulatedSensor.pHSensor"
             }
         }
     });

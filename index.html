@@ -2,23 +2,22 @@
     <head>
     <title>pHPlayer</title>
     <script src="node_modules/flocking/dist/flocking-all.js"></script>
-    <script src="src/pHPlayer.js"></script>
+    <script src="src/sensorPlayer.js"></script>
 
     <script>
     $(document).ready(function() {
         // var simulatedSensor = fluid.pHPlayer.simulatedSensor();
         // var sensorSynthesizer = fluid.pHPlayer.sensorSynthesizer();
-        var pHPlayer = fluid.sensorPlayer();
+        var pHPlayer1 = fluid.sensorPlayer.pHSensorPlayer(".flc-phSensorPlayer-1");
     });
 
     </script>
 
     </head>
     <body>
-    <h1>PH Sensor</h1>
-    <div class="flc-pHSensorValue">
-    </div>
-    <div class="flc-pHFreqValue">
+    <h1>PH Sensor #1</h1>
+    <div class="flc-phSensorPlayer-1">
+
     </div>
     </body>
 </html>

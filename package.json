@@ -1,6 +1,6 @@
 
 {
-    "name" : "phPlayer",
+    "name" : "sensorPlayer",
     "dependencies" : {
         "flocking" : "colinbdclark/flocking"
     }
