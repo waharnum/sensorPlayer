@@ -10,6 +10,7 @@
         model: {
             sensorValue: 50,
             simulateChanges: true,
+            simulateChangesInterval: 1000,
             sensorUpper: 100,
             sensorLower: 0
         },
@@ -41,7 +42,7 @@
             // Turn on the interval changes to the sensorValue
             that.simulateChangesIntervalId = setInterval(function() {
                 that.applier.change("sensorValue", fluid.sensorPlayer.simulatedSensor.randomInt(that.model.sensorUpper, that.model.sensorLower));
-            }, 1000);
+            }, that.model.simulateChangesInterval);
         } else {
             // Turn off the interval changes to the sensorValue
             clearInterval(that.simulateChangesIntervalId);
