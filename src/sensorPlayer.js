@@ -10,7 +10,7 @@
         model: {
             sensorValue: 50,
             simulateChanges: true,
-            simulateChangesInterval: 1000,
+            simulateChangesInterval: 2000,
             sensorMax: 100,
             sensorMin: 0,
             description: "A simulated sensor"
@@ -50,10 +50,10 @@
     fluid.defaults("fluid.sensorPlayer.simulatedSensor.temperatureSensor", {
         gradeNames: ["fluid.sensorPlayer.simulatedSensor"],
         model: {
-            sensorValue: 15,
-            sensorMax: 35,
-            sensorMin: -35,
-            description: "A simulated temperature sensor (in celcius); constrained from -35 to 35."
+            sensorValue: 18,
+            sensorMax: 26,
+            sensorMin: 18,
+            description: "A simulated temperature sensor (in celcius); constrained from 18 to 26."
         }
     });
 
@@ -76,11 +76,18 @@
     fluid.defaults("fluid.sensorPlayer.sensorScalingSynthesizer", {
         gradeNames: ["flock.modelSynth"],
         model: {
+            inputs: {
+                carrier: {
+                    freq: 440
+                }
+            },
             freqMax: 650,
             freqMin: 250,
             sensorMax: 100,
             sensorMin: 0,
-            sensorValue: 50
+            sensorValue: 50,
+            gradualToneChange: false,
+            gradualToneChangeDuration: 500
         },
         synthDef: [
             {
@@ -95,7 +102,7 @@
             ugen: "flock.ugen.sin",
             inputs: {
                 freq: 440,
-                mul: 0.25
+                mul: 0
                 }
             }
         ],
@@ -108,17 +115,44 @@
         }
     });
 
-    fluid.sensorPlayer.sensorScalingSynthesizer.relaySensorValue = function(that, sensorValue) {
+    fluid.sensorPlayer.sensorScalingSynthesizer.relaySensorValue = function(that, newSensorValue) {
         var freqMax = that.model.freqMax,
             freqMin = that.model.freqMin,
+            currentSensorValue = that.model.sensorValue,
             sensorMax = that.model.sensorMax,
-            sensorMin = that.model.sensorMin;
+            sensorMin = that.model.sensorMin,
+            gradualToneChange = that.model.gradualToneChange,
+            gradualToneChangeDuration = that.model.gradualToneChangeDuration;
 
-        var freq = fluid.sensorPlayer.sensorScalingSynthesizer.scaleValue(sensorValue, sensorMin, sensorMax, freqMin, freqMax);
+        var freq = fluid.sensorPlayer.sensorScalingSynthesizer.scaleValue(newSensorValue, sensorMin, sensorMax, freqMin, freqMax);
         var midpointFreq = fluid.sensorPlayer.sensorScalingSynthesizer.getMidpointValue(freqMax, freqMin);
 
-        that.applier.change("inputs.carrier.freq", freq);
         that.applier.change("inputs.midpoint.freq", midpointFreq);
+
+        if(gradualToneChange) {
+            fluid.sensorPlayer.sensorScalingSynthesizer.adjustFrequencyGradually(that, that.model.inputs.carrier.freq, freq, gradualToneChangeDuration, 100);
+        } else {
+            that.applier.change("inputs.carrier.freq", freq);
+        }
+    };
+
+    // Adjust a frequency up or down evenly over "duration"
+    fluid.sensorPlayer.sensorScalingSynthesizer.adjustFrequencyGradually = function (that, currentFreq, targetFreq, duration, tick) {
+        var totalMovement = targetFreq - currentFreq;
+        var intervals = duration / tick;
+        var tickMovement = totalMovement / intervals;
+
+        var currentTickTime = tick;
+        for(var i = 1; i < intervals; i++ ) {
+            setTimeout(function() {
+                var existingFreq = fluid.get(that.model, "inputs.carrier.freq");
+                var freqToMoveTo = existingFreq + tickMovement;
+                that.applier.change("inputs.carrier.freq", freqToMoveTo);
+            }, currentTickTime);
+            currentTickTime = currentTickTime + tick;
+        }
+
+
     };
 
     fluid.sensorPlayer.sensorScalingSynthesizer.getMidpointValue = function(upper, lower) {
@@ -128,7 +162,6 @@
     fluid.sensorPlayer.sensorScalingSynthesizer.scaleValue = function (value, inputLower, inputUpper, outputLower, outputUpper) {
         var scaledValue = ((outputUpper - outputLower) * (value - inputLower) / (inputUpper - inputLower)) + outputLower;
         return scaledValue;
-
     };
 
     fluid.defaults("fluid.sensorPlayer.valueDisplay", {
@@ -173,10 +206,12 @@
             sensorMinDisplay: ".flc-sensorMinValue",
             sensorValueDisplay: ".flc-sensorValue",
             synthFreqDisplay: ".flc-freqValue",
-            descriptionDisplay: ".flc-descriptionDisplay"
+            descriptionDisplay: ".flc-descriptionDisplay",
+            gradualToneControl: ".flc-gradualToneControl",
+            midpointToneControl: ".flc-midpointToneControl",
         },
         members: {
-            template: '<div class="flc-descriptionDisplay"></div><div class="flc-sensorMaxValue"></div><div class="flc-sensorMinValue"></div><div class="flc-sensorValue"></div><div class="flc-freqValue"></div>'
+            template: '<div class="flc-descriptionDisplay"></div><div class="flc-sensorMaxValue"></div><div class="flc-sensorMinValue"></div><div class="flc-sensorValue"></div><div class="flc-freqValue"></div><form> <label>Gradual Tone Change<input class="flc-gradualToneControl" type="checkbox"/></label> <label>Play Sensor Midpoint Tone<input class="flc-midpointToneControl" type="checkbox"/></label> </form>'
         },
         listeners: {
             "onCreate.appendDisplayTemplate": {
@@ -186,6 +221,10 @@
             },
             "onCreate.fireDisplayTemplateReady": {
                 func: "{that}.events.displayTemplateReady.fire"
+            },
+            "onCreate.bindSynthControls": {
+                func: "fluid.sensorPlayer.bindSynthControls",
+                args: ["{that}"]
             }
         },
         components: {
@@ -275,6 +314,28 @@
             }
         }
     });
+
+    fluid.sensorPlayer.bindSynthControls = function (that) {
+        var gradualToneControl = that.locate("gradualToneControl");
+        var midpointToneControl = that.locate("midpointToneControl");
+
+        gradualToneControl.click(function () {
+            var checked = gradualToneControl.is(":checked");
+            that.sensorSynthesizer.applier.change("gradualToneChange", checked);
+        });
+
+        midpointToneControl.click(function () {
+            var checked = midpointToneControl.is(":checked");
+            if(checked) {
+                that.sensorSynthesizer.applier.change("inputs.midpoint.mul", 0.25);
+            }
+            else {
+                that.sensorSynthesizer.applier.change("inputs.midpoint.mul", 0);
+            }
+
+        });
+
+    };
 
     fluid.defaults("fluid.sensorPlayer.pHSensorPlayer", {
         gradeNames: ["fluid.sensorPlayer"],
