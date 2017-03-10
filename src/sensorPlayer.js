@@ -87,7 +87,8 @@
             sensorMin: 0,
             sensorValue: 50,
             gradualToneChange: false,
-            gradualToneChangeDuration: 500
+            gradualToneChangeDuration: 500,
+            graduateToneChangeTickDuration: 100
         },
         synthDef: [
             {
@@ -119,20 +120,22 @@
         var freqMax = that.model.freqMax,
             freqMin = that.model.freqMin,
             currentSensorValue = that.model.sensorValue,
+            currentSynthFreq = that.model.inputs.carrier.freq,
             sensorMax = that.model.sensorMax,
             sensorMin = that.model.sensorMin,
             gradualToneChange = that.model.gradualToneChange,
-            gradualToneChangeDuration = that.model.gradualToneChangeDuration;
+            gradualToneChangeDuration = that.model.gradualToneChangeDuration,
+            graduateToneChangeTickDuration = that.model.graduateToneChangeTickDuration;
 
-        var freq = fluid.sensorPlayer.sensorScalingSynthesizer.scaleValue(newSensorValue, sensorMin, sensorMax, freqMin, freqMax);
+        var targetFreq = fluid.sensorPlayer.sensorScalingSynthesizer.scaleValue(newSensorValue, sensorMin, sensorMax, freqMin, freqMax);
         var midpointFreq = fluid.sensorPlayer.sensorScalingSynthesizer.getMidpointValue(freqMax, freqMin);
 
         that.applier.change("inputs.midpoint.freq", midpointFreq);
 
         if(gradualToneChange) {
-            fluid.sensorPlayer.sensorScalingSynthesizer.adjustFrequencyGradually(that, that.model.inputs.carrier.freq, freq, gradualToneChangeDuration, 100);
+            fluid.sensorPlayer.sensorScalingSynthesizer.adjustFrequencyGradually(that, currentSynthFreq, targetFreq, gradualToneChangeDuration, graduateToneChangeTickDuration);
         } else {
-            that.applier.change("inputs.carrier.freq", freq);
+            that.applier.change("inputs.carrier.freq", targetFreq);
         }
     };
 
