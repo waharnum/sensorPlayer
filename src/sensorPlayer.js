@@ -212,9 +212,10 @@
             descriptionDisplay: ".flc-descriptionDisplay",
             gradualToneControl: ".flc-gradualToneControl",
             midpointToneControl: ".flc-midpointToneControl",
+            muteControl: ".flc-muteControl",
         },
         members: {
-            template: '<div class="flc-descriptionDisplay"></div><div class="flc-sensorMaxValue"></div><div class="flc-sensorMinValue"></div><div class="flc-sensorValue"></div><div class="flc-freqValue"></div><form> <label>Gradual Tone Change<input class="flc-gradualToneControl" type="checkbox"/></label> <label>Play Sensor Midpoint Tone<input class="flc-midpointToneControl" type="checkbox"/></label> </form>'
+            template: '<div class="flc-descriptionDisplay"></div><div class="flc-sensorMaxValue"></div><div class="flc-sensorMinValue"></div><div class="flc-sensorValue"></div><div class="flc-freqValue"></div><form> <label>Gradual Tone Change<input class="flc-gradualToneControl" type="checkbox"/></label> <label>Play Sensor Midpoint Tone<input class="flc-midpointToneControl" type="checkbox"/></label><br/> <label><strong>Mute Main Synthesizer</strong><input class="flc-muteControl" type="checkbox"/></label> </form>'
         },
         listeners: {
             "onCreate.appendDisplayTemplate": {
@@ -319,8 +320,20 @@
     });
 
     fluid.sensorPlayer.bindSynthControls = function (that) {
+        var muteControl = that.locate("muteControl");
         var gradualToneControl = that.locate("gradualToneControl");
         var midpointToneControl = that.locate("midpointToneControl");
+
+        muteControl.click(function () {
+            var checked = muteControl.is(":checked");
+            if(checked) {
+                that.sensorSynthesizer.applier.change("inputs.carrier.mul", 0);
+            }
+            else {
+                that.sensorSynthesizer.applier.change("inputs.carrier.mul", 1);
+            }
+
+        });
 
         gradualToneControl.click(function () {
             var checked = gradualToneControl.is(":checked");
